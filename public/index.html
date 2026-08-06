@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Date Invitation</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      overflow: hidden;
+      background: #0f051d;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Interactive Fluid Canvas */
+    #waveCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+    }
+
+    /* Glassmorphism Container */
+    .card {
+      position: relative;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 24px;
+      padding: 40px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      text-align: center;
+      display: none;
+      animation: fadeIn 0.6s ease-in-out forwards;
+    }
+
+    .card.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 15px;
+      background: linear-gradient(45deg, #ff758c, #ff7eb3);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p {
+      color: #e0e0e0;
+      margin-bottom: 25px;
+      font-size: 1.1rem;
+      line-height: 1.5;
+    }
+
+    /* Form Fields */
+    .field-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      color: #ff7e5f;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(0, 0, 0, 0.3);
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    input:focus, select:focus {
+      border-color: #ff758c;
+    }
+
+    /* Buttons */
+    .btn-group {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+      position: relative;
+      min-height: 50px;
+    }
+
+    button {
+      padding: 12px 30px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-yes {
+      background: linear-gradient(45deg, #ff416c, #ff4b2b);
+      color: white;
+      box-shadow: 0 4px 15px rgba(255, 65, 108, 0.4);
+    }
+
+    .btn-yes:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(255, 65, 108, 0.6);
+    }
+
+    .btn-no {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      position: absolute;
+      right: 20%;
+    }
+
+    .btn-qr {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 10px 18px;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: #1e1e2f;
+      padding: 30px;
+      border-radius: 20px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    /* Heart Particle Styling */
+    .heart {
+      position: fixed;
+      pointer-events: none;
+      font-size: 20px;
+      animation: floatUp 1.5s linear forwards;
+      z-index: 100;
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-100px) scale(0.3); }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="btn-qr" onclick="toggleQR()">📱 Open on Mobile</button>
+
+  <canvas id="waveCanvas"></canvas>
+
+  <!-- Step 1: Proposal Page -->
+  <div class="card active" id="step1">
+    <h1>Would You Like to Go Out With Me? 💕</h1>
+    <p>I built this tiny space on the web just to ask you one special question.</p>
+    <div class="btn-group">
+      <button class="btn-yes" onclick="nextStep(2)">YES!</button>
+      <button class="btn-no" id="noBtn">No</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Date & Place -->
+  <div class="card" id="step2">
+    <h1>Planning Our Date 🍷</h1>
+    <p>Let's set the foundation for a wonderful time.</p>
+    <div class="field-group">
+      <label>Date & Time</label>
+      <input type="datetime-local" id="dateTime" required>
+    </div>
+    <div class="field-group">
+      <label>Location / City</label>
+      <input type="text" id="location" placeholder="e.g. Downtown / Waterfront" required>
+    </div>
+    <div class="field-group">
+      <label>Preferred Restaurant</label>
+      <input type="text" id="restaurant" placeholder="e.g. Italian Bistro" required>
+    </div>
+    <div class="btn-group">
+      <button class="btn-yes" onclick="nextStep(3)">OK Next →</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Style & Options -->
+  <div class="card" id="step3">
+    <h1>Vibe & Preference ✨</h1>
+    <p>Help me match the mood!</p>
+    <div class="field-group">
+      <label>Dress Code Style</label>
+      <select id="dressType">
+        <option value="Casual Chic">Casual Chic</option>
+        <option value="Formal Elegance">Formal Elegance</option>
+        <option value="Cozy / Relaxed">Cozy / Relaxed</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label>Color Palette</label>
+      <input type="text" id="dressColor" placeholder="e.g. Black, Rose Gold, Navy" required>
+    </div>
+    <div class="field-group">
+      <label>After-Dinner Activity</label>
+      <select id="activity">
+        <option value="Late Night Walk">Late Night Walk</option>
+        <option value="Rooftop Drinks">Rooftop Drinks</option>
+        <option value="Stargazing">Stargazing</option>
+        <option value="Dessert Spot">Dessert Spot</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label>Your Email (for confirmation)</label>
+      <input type="email" id="userEmail" placeholder="yourname@domain.com" required>
+    </div>
+    <div class="btn-group">
+      <button class="btn-yes" onclick="submitData()">Lock It In! 💖</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Confirmation Page -->
+  <div class="card" id="step4">
+    <h1>It's a Date! 🎉</h1>
+    <p>All details have been submitted. Check your inbox—a confirmation email has been sent to you!</p>
+    <p>Can't wait! ❤️</p>
+  </div>
+
+  <!-- QR Code Modal -->
+  <div class="modal" id="qrModal">
+    <div class="modal-content">
+      <h2 style="margin-bottom: 10px;">Scan to view on Mobile</h2>
+      <div id="qrcode"></div>
+      <button class="btn-yes" style="padding: 8px 20px;" onclick="toggleQR()">Close</button>
+    </div>
+  </div>
+
+  <script>
+    /* --- 1. Water Wave Canvas Animation --- */
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    let step = 0;
+    const lines = [
+      { color: 'rgba(255, 117, 140, 0.15)', speed: 0.01, height: 40, scale: 0.005 },
+      { color: 'rgba(255, 126, 179, 0.10)', speed: 0.015, height: 60, scale: 0.003 },
+      { color: 'rgba(120, 115, 245, 0.12)', speed: 0.008, height: 80, scale: 0.002 }
+    ];
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    function drawWaves() {
+      ctx.clearRect(0, 0, width, height);
+      step += 1;
+
+      lines.forEach((line) => {
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = line.color;
+
+        for (let x = 0; x <= width; x += 10) {
+          const y = Math.sin(x * line.scale + step * line.speed) * line.height + height / 2;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      });
+
+      requestAnimationFrame(drawWaves);
+    }
+    drawWaves();
+
+    /* --- 2. Interactive Heart Cursor --- */
+    window.addEventListener('mousemove', (e) => {
+      if (Math.random() < 0.08) {
+        const heart = document.createElement('div');
+        heart.className = 'heart';
+        heart.innerHTML = '❤️';
+        heart.style.left = e.clientX + 'px';
+        heart.style.top = e.clientY + 'px';
+        document.body.appendChild(heart);
+        setTimeout(() => heart.remove(), 1500);
+      }
+    });
+
+    /* --- 3. Evasive 'No' Button Logic --- */
+    const noBtn = document.getElementById('noBtn');
+    
+    function moveNoButton(e) {
+      const rect = noBtn.getBoundingClientRect();
+      const distance = Math.hypot(e.clientX - (rect.left + rect.width/2), e.clientY - (rect.top + rect.height/2));
+
+      if (distance < 100) {
+        const newX = Math.random() * (window.innerWidth - rect.width - 100) + 50;
+        const newY = Math.random() * (window.innerHeight - rect.height - 100) + 50;
+        noBtn.style.position = 'fixed';
+        noBtn.style.left = `${newX}px`;
+        noBtn.style.top = `${newY}px`;
+      }
+    }
+
+    document.addEventListener('mousemove', moveNoButton);
+
+    /* --- 4. Navigation Flow --- */
+    function nextStep(stepNumber) {
+      document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+      document.getElementById(`step${stepNumber}`).classList.add('active');
+    }
+
+    /* --- 5. Data Submission to Backend --- */
+    async function submitData() {
+      const payload = {
+        dateTime: document.getElementById('dateTime').value,
+        location: document.getElementById('location').value,
+        restaurant: document.getElementById('restaurant').value,
+        dressType: document.getElementById('dressType').value,
+        dressColor: document.getElementById('dressColor').value,
+        activity: document.getElementById('activity').value,
+        userEmail: document.getElementById('userEmail').value
+      };
+
+      if (!payload.dateTime || !payload.userEmail) {
+        alert('Please fill out the essential fields!');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          nextStep(4);
+        } else {
+          alert('Submission failed. Check server logs.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Server unreachable.');
+      }
+    }
+
+    /* --- 6. Mobile QR Generator --- */
+    let qrGenerated = false;
+    function toggleQR() {
+      const modal = document.getElementById('qrModal');
+      modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+
+      if (!qrGenerated) {
+        new QRCode(document.getElementById("qrcode"), {
+          text: window.location.href,
+          width: 180,
+          height: 180
+        });
+        qrGenerated = true;
+      }
+    }
+  </script>
+</body>
+</html>
